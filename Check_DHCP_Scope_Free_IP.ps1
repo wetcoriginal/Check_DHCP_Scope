@@ -31,14 +31,14 @@ if ($ActiveScopes) {
     $Free = [Int] $Stats.Free
 
     # Check if scope is in critical status
-    if ($Free -ge $Critical) {
+    if ($Free -le $Critical) {
         $IsCritical = $IsCritical + 1
         $Message += "CRITICAL - $($Scope.Name) is ($Used% used, $Free IP's available)`n"
         # Increment the count for the CRITICAL status
         $global:CriticalCount++
     }
     # Check if scope is in warning status and not critical
-    elseif ($Free -ge $Warning) {
+    elseif ($Free -le $Warning) {
         $IsWarning = $IsWarning + 1
         $Message += "WARNING - $($Scope.Name) is ($Used% used, $Free IP's available)`n"
         # Increment the count for the WARNING status
