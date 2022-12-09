@@ -1,6 +1,7 @@
 #Edited by @wetcoriginal for Centreon
 #usage : ./check_dhcp_scope.ps1 -Warning 60 -Critical 80
 #Adjust value of warning and critical to meet your needs
+#Value are in percentage
 
 Param (
 	[ValidateRange(0,100)][Int]
