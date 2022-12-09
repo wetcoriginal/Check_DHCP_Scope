@@ -18,7 +18,6 @@ $IsCritical = 0
 $ActiveScopes = Get-DhcpServerv4Scope | Where { $_.State -eq 'Active' }
 
 # Initialize the counts for each status
-$global:WarningDisabledCount = 0
 $global:WarningCount = 0
 $global:CriticalCount = 0
 $global:OkCount = 0
@@ -75,7 +74,7 @@ else {
 }
 
 
-#Ajout du nombre total d'erreur dÃ©tectÃ©es
+#Ajout du nombre total d'erreur détectés
 $TotalCount=$global:WarningCount + $global:CriticalCount + $global:OkCount
 $global:OutMessage="TOTAL=>" + $TotalCount + " / OK=>" + $global:OkCount + " / CRITICAL=>" + $global:CriticalCount + " / WARNING=>" + $global:WarningCount
 $global:OutMessage+="`r`n"
