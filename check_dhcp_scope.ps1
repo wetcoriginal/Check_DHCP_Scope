@@ -2,26 +2,31 @@
 #usage : ./check_dhcp_scope.ps1
 Param (
     #Threshold defining the minimum number of IPs in the scope in order to check the remaining space in % rather than the number of remaining IPs.
+    #LowScope ignores scopes with too little IP
 	[ValidateRange(0,100)][Int]
-	$Treshold = 5,
+	$Treshold = 21,
 	#Value in percent defining the warning limit
 	[ValidateRange(0,100)][Int]
-	$WarningPercent = 20,
+	$WarningPercent = 75,
 	#Value in percent defining the critical limit
 	[ValidateRange(0,100)][Int]
-	$CriticalPercent = 30,
+	$CriticalPercent = 90,
 	#Remaining available IP value defining the warning limit
 	[ValidateRange(0,100)][Int]
 	$WarningFree = 10,
 	#Remaining available IP value defining the critical limit
 	[ValidateRange(0,100)][Int]
-	$CriticalFree = 5
+	$CriticalFree = 5,
+	#Remaining available IP value defining the critical limit
+	[ValidateRange(0,100)][Int]
+	$LowScope = 6
 )
 
 $Message = ""
 
 $IsWarning  = 0
 $IsCritical = 0
+$IsOk = 0
 
 $ActiveScopes = Get-DhcpServerv4Scope | Where { $_.State -eq 'Active' }
 
@@ -33,21 +38,22 @@ $global:OkCount = 0
 if ($ActiveScopes) {
 	$ActiveScopes | Foreach {
 		$Scope = $_
-		$Stats = Get-DhcpServerv4ScopeStatistics $Scope.ScopeId
-        $NumberOfIp = (Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId | Select-Object -ExpandProperty AddressesFree) + (Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId | Select-Object -ExpandProperty AddressesInUse)
-		
+		$Stats = Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId
+        $TotalIp = (Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId | Select-Object -ExpandProperty Free) + (Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId | Select-Object -ExpandProperty InUse)
+        $IpInUse = Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId | Select-Object -ExpandProperty InUse
+        $IpLibre = Get-DhcpServerv4ScopeStatistics -ScopeId $Scope.ScopeId | Select-Object -ExpandProperty Free
 		$Used = [Int] $Stats.PercentageInUse
         $Free = [Int] $Stats.Free
 
-    if ($NumberOfIP -le $Treshold) {
-    # Check if scope is in critical status
+   if (($TotalIp -le $Treshold) -and ($TotalIp -ge $LowScope)) {
+    # Check if scope is in critical status based on $Free
     if ($Free -le $CriticalFree) {
         $IsCritical = $IsCritical + 1
         $Message += "CRITICAL - Le scope $($Scope.Name) n'a plus que $Free IP's disponible`n"
         # Increment the count for the CRITICAL status
         $global:CriticalCount++
     }
-    # Check if scope is in warning status and not critical
+    # Check if scope is in warning status based on $Free and not critical
     elseif ($Free -le $WarningFree) {
         $IsWarning = $IsWarning + 1
         $Message += "WARNING - Le scope $($Scope.Name) n'a plus que $Free IP's disponible`n"
@@ -60,9 +66,10 @@ if ($ActiveScopes) {
         # Increment the count for the OK status
         $global:OkCount++
 		}
-    }
-    else {
-    # Check if scope is in critical status
+}
+else {
+   if (($TotalIp -ge $Treshold) -and ($TotalIp -ge $LowScope)) {
+    # Check if scope is in critical status based on $Used
     if ($Used -ge $CriticalPercent) {
         $IsCritical = $IsCritical + 1
         $Message += "CRITICAL - Le scope $($Scope.Name) est utilisé à $Used% `n"
@@ -85,9 +92,10 @@ if ($ActiveScopes) {
 	}
 }
 }
+}
 
 # Calculate the total number of scopes
-$TotalCount = $global:WarningDisabledCount + $global:WarningCount + $global:CriticalCount + $global:OkCount
+$TotalCount = $global:WarningCount + $global:CriticalCount + $global:OkCount
 
 if ($Message) {
 	$output = $Message | Out-String
