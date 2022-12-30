@@ -67,6 +67,14 @@ if ($ActiveScopes) {
         $global:OkCount++
 		}
 }
+if ($TotalIp -le $LowScope) {
+    if ($Free -eq 0) {
+        $IsCritical = $IsCritical + 1
+        $Message += "CRITICAL - Plus d'IP disponible dans le scope $($Scope.Name) `n"
+        # Increment the count for the CRITICAL status
+        $global:CriticalCount++
+}
+}
 else {
    if (($TotalIp -ge $Treshold) -and ($TotalIp -ge $LowScope)) {
     # Check if scope is in critical status based on $Used
